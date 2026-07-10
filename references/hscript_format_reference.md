@@ -54,6 +54,10 @@ The HALCON operator calls, control flow, and data model are identical — only t
 
 ### HScript (`.hscript`)
 ```hscript
+// Image: input iconic; sem_type=image; multivalue=false.
+// FinRegion: output iconic; sem_type=region; multivalue=false.
+// FinArea: output control; type_list=integer; default_type=integer;
+//          mixed_type=false; multivalue=false; sem_type=integer; unit=pixels.
 public proc detect_fin(object Image, out object FinRegion, out tuple FinArea)
   binary_threshold (Image, Dark, 'max_separability', 'dark', UsedThreshold)
   area_center (FinRegion, FinArea, Row, Column)
@@ -68,6 +72,13 @@ endproc
 | `<oo>` (`base_type="iconic"`) | `out object` | Output iconic |
 | `<ic>` (`base_type="ctrl"`) | `tuple` | Input control (number/string/handle) |
 | `<oc>` (`base_type="ctrl"`) | `out tuple` | Output control |
+
+Because HScript stores procedure documentation in comments rather than a `<docu>` block, document the equivalent metadata explicitly for every signature parameter:
+
+- Every input and output: direction, iconic/control class, `sem_type`, and `multivalue` (`false`, `true`, or `optional`).
+- Every control input and output: non-empty `type_list`, `default_type`, and `mixed_type`.
+- Every input control with a meaningful default: `default_value`; tunable and test parameters always need one.
+- Iconic parameters: image type or multichannel constraints only when meaningful; never invent control-only metadata.
 
 ### Procedure visibility
 

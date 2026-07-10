@@ -239,15 +239,28 @@ Documents one procedure parameter in the `<docu>` block.
 
 | Child tag | Description | Example values |
 |-----------|-------------|----------------|
-| `<default_type>` | Expected type | `"integer"`, `"real"`, `"string"` |
-| `<default_value>` | Default value | `"0"`, `"-1"`, `"'true'"` |
+| `<default_type>` | Default data type for a control parameter | `"integer"`, `"real"`, `"string"`, `"none"` |
+| `<default_value>` | Suggested value for an input control parameter; callers must still pass it explicitly | `"0"`, `"-1"`, `"'true'"` |
 | `<description>` | Human-readable description. Provide in **three** variants: no `lang` (fallback), `lang="en_US"`, `lang="de_DE"` | |
-| `<mixed_type>` | Accepts multiple types? | `"true"`, `"false"` |
-| `<multivalue>` | Accepts tuples? | `"false"`, `"true"`, `"optional"` |
+| `<mixed_type>` | Whether a control tuple may mix the types listed in `<type_list>` | `"true"`, `"false"` |
+| `<multivalue>` | Required cardinality: one value, tuple, or either | `"false"`, `"true"`, `"optional"` |
 | `<multichannel>` | Multi-channel support? | `"optional"` |
 | `<sem_type>` | Semantic type | `"integer"`, `"window"`, `"image"`, `"color"`, `"number"`, `"string"`, `"filename.read"`, `"point.x"` |
 | `<type_list>` | Allowed types — contains `<item>` elements | `"integer"`, `"real"`, `"string"` |
 | `<values>` | Suggested/allowed values — contains `<item>` elements | `"300"`, `"[300,600]"`, `"'left'"` |
+
+### Required parameter metadata
+
+Set the following fields for every procedure parameter; do not leave the corresponding HDevelop interface settings at accidental defaults:
+
+| Parameter class | Required metadata |
+|-----------------|-------------------|
+| Input iconic (`<io>`) | Correct `<sem_type>` and explicit `<multivalue>`; add `<type_list>` for constrained image pixel types and `<multichannel>` when meaningful |
+| Output iconic (`<oo>`) | Correct `<sem_type>` and explicit `<multivalue>`; add further iconic metadata only when meaningful |
+| Input control (`<ic>`) | Non-empty `<type_list>`, `<default_type>`, `<sem_type>`, `<mixed_type>`, and `<multivalue>`; add a sensible `<default_value>` whenever one exists, and always for tunable/test parameters |
+| Output control (`<oc>`) | Non-empty `<type_list>`, `<default_type>`, `<sem_type>`, `<mixed_type>`, and `<multivalue>`; no `<default_value>` |
+
+Use `<multivalue>false</multivalue>` when exactly one value is accepted, `true` when a tuple is required, and `optional` only when both forms are supported. Use `<mixed_type>true</mixed_type>` only when one tuple may contain different types from `<type_list>`; otherwise set it to `false` explicitly. `<default_value>` is documentation, not an automatically supplied runtime argument.
 
 ### Full `<docu>` example for a non-main procedure
 
@@ -291,9 +304,9 @@ Note the three-language pattern: a language-independent copy (no `lang`) as fall
   </see_also>
   <parameters>
     <parameter id="Image">
-      <default_type>string</default_type>
       <description lang="en_US">Input grayscale image to inspect for defects.</description>
       <description lang="de_DE">Eingabe-Graustufenbild zur Defektinspektion.</description>
+      <multivalue>false</multivalue>
       <sem_type>image</sem_type>
       <type_list>
         <item>byte</item>
@@ -336,7 +349,12 @@ Note the three-language pattern: a language-independent copy (no `lang`) as fall
       <default_type>integer</default_type>
       <description lang="en_US">Pass/fail result. 1 if no defects found (pass), 0 if defects detected (fail).</description>
       <description lang="de_DE">Gut/Schlecht-Ergebnis. 1 wenn keine Defekte gefunden (Gut), 0 wenn Defekte erkannt (Schlecht).</description>
+      <mixed_type>false</mixed_type>
+      <multivalue>false</multivalue>
       <sem_type>integer</sem_type>
+      <type_list>
+        <item>integer</item>
+      </type_list>
       <values>
         <item>0</item>
         <item>1</item>
@@ -405,13 +423,19 @@ A `.hdev` script can contain `main` plus helper procedures. All procedures share
         <parameter id="Image">
           <description lang="en_US">Input image.</description>
           <description lang="de_DE">Eingabebild.</description>
+          <multivalue>false</multivalue>
           <sem_type>image</sem_type>
         </parameter>
         <parameter id="Result">
           <description lang="en_US">Area of the image domain in pixels.</description>
           <description lang="de_DE">Fläche des Bildbereichs in Pixeln.</description>
           <default_type>integer</default_type>
+          <mixed_type>false</mixed_type>
+          <multivalue>false</multivalue>
           <sem_type>integer</sem_type>
+          <type_list>
+            <item>integer</item>
+          </type_list>
         </parameter>
       </parameters>
     </docu>

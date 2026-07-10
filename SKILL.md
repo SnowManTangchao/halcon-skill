@@ -82,8 +82,11 @@ HALCONROOT documentation (available at `HALCONROOT/doc/`):
     - If the user's locale is known and differs from `en_US`/`de_DE`, add a fourth copy with the user's `lang` tag (e.g., `lang="ja_JP"`, `lang="zh_CN"`).
     - This three-copy pattern is how HALCON's own built-in procedures work (see `HALCONROOT/procedures/general/`). Without the fallback and German copies, descriptions appear empty when the GUI is set to German.
     - Also include `<keywords>` (with `lang="en_US"` and `lang="de_DE"`), `<chapters>` (with `lang="en_US"` and `lang="de_DE"`), `<see_also>`, `<alternatives>`, `<predecessor>`, `<successor>` where applicable.
-    - Per-parameter documentation must include `<default_type>`, `<default_value>`, `<sem_type>`, `<type_list>`, and `<values>` where applicable — these drive the HDevelop GUI's parameter widgets and tooltips.
-  - For `.hscript`: document each procedure (including the main program section) and each parameter with `//` comments above or next to the `proc` signature, stating purpose, type, value range, units, and defaults. Provide documentation in both English and German where practical.
+    - Parameter metadata must match the actual interface behavior. For **every input and output parameter**, explicitly set `<sem_type>` and `<multivalue>` (`false` = exactly one value, `true` = a tuple is required, `optional` = either is accepted).
+    - For **every input and output control parameter**, also set a non-empty `<type_list>`, `<default_type>`, and `<mixed_type>`. Set `<mixed_type>false</mixed_type>` unless a multivalue tuple may actually mix types listed in `<type_list>`.
+    - For **input control parameters**, add a sensible `<default_value>` whenever one exists; tunable and test parameters must always have one. Add `<values>`, `<value_min>`, and `<value_max>` when they describe real choices or enforced numeric limits.
+    - For **iconic parameters**, use the precise semantic type (`object`, `image`, `region`, `xld`, etc.), set `<multivalue>` explicitly, and add image type or multichannel metadata only when it is meaningful. Do not add control-only `<default_type>`, `<default_value>`, or `<mixed_type>` metadata to iconic parameters.
+  - For `.hscript`: document each procedure (including the main program section) and each parameter with `//` comments above or next to the `proc` signature. For every parameter state its direction, iconic/control type, semantic type, accepted value types, single/tuple behavior, mixed-type behavior for control tuples, purpose, range, units, and default where applicable. Provide documentation in both English and German where practical.
 - Document and explain all code.
 
 ## Response contract
