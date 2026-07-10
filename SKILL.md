@@ -47,7 +47,7 @@ HALCONROOT documentation (available at `HALCONROOT/doc/`):
 3. Always investigate at least three different implementation approaches and compare their pros and cons before settling on a final solution. If you are unsure which one is the absolute best and most stable solution, ask the user for clarification or preferences.
 4. Tunable parameters should always be procedure parameters with sensible defaults and a clear parameter range. In `main()` put all tunable parameters in a single block at the top for easy access and documentation.
 5. Encapsulate repeated logic into local or external procedures.
-6. Use `dev_` operators for visualization and debugging. Use multiple windows if multiple different visualizations are required. Prefer `dev_set_part()` over cropping for visualization. Only write annotated images in `main()`.
+6. Use `dev_` operators for visualization and debugging. Use multiple windows if multiple different visualizations are required. Prefer `dev_set_part()` over cropping for visualization. Only write annotated images in `main()`. Follow the visualization color scheme below.
 7. Add robust error handling (`try/catch` or return-code handling) when runtime failures are plausible.
 8. Add parallelization (`par_start`/`par_join`) only for independent tasks and isolated outputs.
 9. Keep output semantics explicit (`ok`/`nok`, scores, measured values, reasons).
@@ -55,6 +55,64 @@ HALCONROOT documentation (available at `HALCONROOT/doc/`):
 11. The core image processing logic that should be used in production needs to be a separate procedure with at least an iconic `Image` input parameter and boolean `JobPass` output parameter.
 12. There should not be any code accessing input sources (cameras) or external communication (network, industrial communication, file I/O) unless the user explicitly asks for it.
 13. Ensure the code can run headless via `hrun` (for `.hdev`) or `hscriptengine` (for `.hscript`). This means: no `stop()` anywhere, no `dev_open_dialog`, no interactive operators. Use `try`/`catch` around visualization code so it degrades gracefully when no display is available.
+
+## Visualization color scheme
+Use the following palette for all HALCON overlays, annotations, and result displays. Use the exact hexadecimal HALCON color codes instead of named colors such as `'green'`, `'red'`, or `'blue'` when a palette color exists.
+
+At the top of each procedure that performs visualization, declare only the colors that procedure actually uses. Name each variable by its meaning in the procedure, not by its hue or position. Prefer names such as `ColorGoodDetection`, `ColorFailure`, `ColorCalculatedValue`, `ColorWarningLow`, `ColorWarningHigh`, or `ColorDismissedFeature`; avoid names such as `Green`, `Red`, `Color1`, or `OverlayColor`.
+
+| Meaning | Source color | RGB | HALCON code |
+|---|---|---:|---|
+| Good or accepted detection, `JobPass = true` | `OK` / green | 133, 164, 7 | `#85A407` |
+| Error, failure, rejected detection, `JobPass = false` | `Alarm` / red | 202, 51, 51 | `#CA3333` |
+| Calculated or measured value | `Accent` / blue | 0, 95, 135 | `#005F87` |
+| Low warning or special attention | `WarningLow` / yellow | 234, 206, 33 | `#EACE21` |
+| High warning or special attention | `WarningHigh` / orange | 231, 121, 16 | `#E77910` |
+| Dismissed, suppressed, or otherwise excluded feature | yellow or orange according to severity | 234, 206, 33 or 231, 121, 16 | `#EACE21` or `#E77910` |
+
+Use the neutral colors only when a visualization needs a background, panel, inactive element, or neutral annotation:
+
+| Source color | RGB | HALCON code |
+|---|---:|---|
+| `Light` | 218, 220, 224 | `#DADCE0` |
+| `DarkGrey` | 39, 51, 56 | `#273338` |
+| `Grey` | 64, 77, 83 | `#404D53` |
+| `LightGrey` | 196, 199, 204 | `#C4C7CC` |
+| `White` | 249, 247, 248 | `#F9F7F8` |
+
+Use RGBA codes (`#rrggbbaa`) only when translucency is useful, for example when a filled region would otherwise hide the image. Keep thin contours and text opaque unless there is a specific reason not to. The standard translucent aliases use alpha 128 (`80` hexadecimal):
+
+| Meaning | HALCON code |
+|---|---|
+| Transparent failure/red | `#CA333380` |
+| Transparent good detection/green | `#85A40780` |
+| Transparent calculated value/blue | `#005F8780` |
+| Transparent white | `#F9F7F880` |
+| Transparent low warning/yellow | `#EACE2180` |
+| Transparent high warning/orange | `#E7791080` |
+
+When matching the predefined Qt constant `AlarmTranslucent` exactly, use alpha 127 (`#CA33337F`). When matching the generic `transparentRed` alias, use alpha 128 (`#CA333380`).
+
+Example procedure-local declarations and use:
+
+```hdevelop
+* Declare only colors used by this procedure.
+ColorGoodDetection := '#85A407'
+ColorFailure := '#CA3333'
+ColorCalculatedValue := '#005F87'
+ColorDismissedFeature := '#E7791080'
+
+dev_set_color (ColorGoodDetection)
+dev_display (AcceptedDetections)
+dev_set_color (ColorFailure)
+dev_display (FailedDetections)
+dev_set_color (ColorCalculatedValue)
+disp_message (WindowHandle, 'Width: ' + Width$'.2f' + ' mm', 'window', 12, 12, ColorCalculatedValue, 'false')
+dev_set_color (ColorDismissedFeature)
+dev_display (DismissedFeatures)
+```
+
+Use the same variables with `set_color(WindowHandle, Color)` when rendering through an explicit window handle instead of HDevelop's active graphics window.
 
 ## Coding rules
 - Use idiomatic HDevelop syntax (`:=`, tuples, vectors, dictionaries, `if/for/while/switch`).
