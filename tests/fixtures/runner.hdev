@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<hdevelop file_version="1.2" halcon_version="25.11.0.0">
+<procedure name="main">
+<interface/>
+<body/>
+<docu id="main">
+<abstract>Fixtures for testing the Python runner; call the local procedures directly.</abstract>
+<short>Runner test fixture.</short>
+<example>Use hdev_call.py with --procedure test_double --input Value=21.</example>
+<parameters/>
+</docu>
+</procedure>
+<procedure name="test_double">
+<interface>
+<ic><par name="Value" base_type="ctrl" dimension="0"/></ic>
+<oc>
+<par name="Result" base_type="ctrl" dimension="0"/>
+<par name="TestPass" base_type="ctrl" dimension="0"/>
+</oc>
+</interface>
+<body>
+<l>Result := Value * 2</l>
+<l>TestPass := Result == 42</l>
+</body>
+<docu id="test_double">
+<abstract>Doubles the explicit input and passes exactly when the result is 42.</abstract>
+<short>Verify input, output and pass/fail transport.</short>
+<example>test_double (21, Result, TestPass)</example>
+<parameters>
+<parameter id="Value"><description>Integer input, normally 21.</description></parameter>
+<parameter id="Result"><description>Twice Value.</description></parameter>
+<parameter id="TestPass"><description>1 when Result is 42, otherwise 0.</description></parameter>
+</parameters>
+</docu>
+</procedure>
+<procedure name="test_failure">
+<interface>
+<ic><par name="Value" base_type="ctrl" dimension="0"/></ic>
+<oc><par name="TestPass" base_type="ctrl" dimension="0"/></oc>
+</interface>
+<body>
+<l>TestPass := 0</l>
+</body>
+<docu id="test_failure">
+<abstract>Deliberately returns a failed assertion to test batch failure reporting.</abstract>
+<short>Intentional test failure.</short>
+<example>test_failure (21, TestPass)</example>
+<parameters>
+<parameter id="Value"><description>Unused integer; matches the batch input interface.</description></parameter>
+<parameter id="TestPass"><description>Always 0.</description></parameter>
+</parameters>
+</docu>
+</procedure>
+</hdevelop>
