@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<hdevelop file_version="1.2" halcon_version="25.11.0.0">
+<procedure name="main">
+<interface/>
+<body><l>render_preview (TestPass)</l></body>
+<docu id="main"><abstract>Headless SVG display fixture.</abstract><short>SVG smoke test.</short><example>Run render_preview using hdev_call --svg-dir.</example><parameters/></docu>
+</procedure>
+<procedure name="render_preview">
+<interface><oc><par name="TestPass" base_type="ctrl" dimension="0"/></oc></interface>
+<body>
+<l>gen_image_const (Image, 'byte', 100, 80)</l>
+<l>scale_image (Image, Image, 1, 70)</l>
+<l>gen_rectangle1 (Outer, 10, 10, 60, 80)</l>
+<l>gen_rectangle1 (Inner, 25, 30, 45, 60)</l>
+<l>difference (Outer, Inner, Ring)</l>
+<l>gen_contour_polygon_xld (Contour, [5,65,15], [5,50,95])</l>
+<l>dev_open_window (0, 0, 400, 320, 'black', Window1)</l>
+<l>dev_set_part (0, 0, 79, 99)</l>
+<l>dev_display (Image)</l>
+<l>dev_set_color ('red')</l>
+<l>dev_set_draw ('fill')</l>
+<l>dev_display (Ring)</l>
+<l>dev_set_color ('cyan')</l>
+<l>dev_set_line_width (3)</l>
+<l>dev_display (Contour)</l>
+<l>dev_disp_text ('SVG preview', 'window', 8, 8, 'white', [], [])</l>
+<l>dev_open_window (0, 420, 200, 160, 'white', Window2)</l>
+<l>dev_display (Image)</l>
+<l>dev_clear_window ()</l>
+<l>dev_set_part (0, 0, 79, 99)</l>
+<l>dev_set_color ('blue')</l>
+<l>dev_set_draw ('margin')</l>
+<l>dev_display (Ring)</l>
+<l>dev_set_shape ('rectangle1')</l>
+<l>dev_set_window (Window1)</l>
+<l>dev_get_window (Selected)</l>
+<l>TestPass := Selected == Window1</l>
+<l>dev_set_window (Window2)</l>
+<l>dev_close_window ()</l>
+</body>
+<docu id="render_preview">
+<abstract>Draw an embedded image, a region with a hole and an XLD contour in two virtual windows. Verify window selection and preserve the cleared/closed second window.</abstract>
+<short>Exercise SVG display callbacks.</short>
+<example>render_preview (TestPass)</example>
+<parameters><parameter id="TestPass"><description>1 when the selected window handle is returned correctly.</description></parameter></parameters>
+</docu>
+</procedure>
+<procedure name="render_failure">
+<interface/>
+<body><l>render_preview (TestPass)</l><l>throw ('intentional SVG test failure')</l></body>
+<docu id="render_failure"><abstract>Verify that graphics survive a procedure exception.</abstract><short>Intentional failure after drawing.</short><example>render_failure ()</example><parameters/></docu>
+</procedure>
+<procedure name="options_preview">
+<interface><oc><par name="TestPass" base_type="ctrl" dimension="0"/></oc></interface>
+<body>
+<c>* Native palettes, shape conversion and inherited settings.</c>
+<l>gen_image_const (Image, 'byte', 100, 80)</l>
+<l>gen_circle (Regions, [15,35,55], [15,45,75], 7)</l>
+<l>dev_set_colored (3)</l>
+<l>dev_set_shape ('rectangle1')</l>
+<l>dev_open_window (0, 0, 400, 320, 'white', Shapes)</l>
+<l>dev_set_part (0, 0, 79, 99)</l>
+<l>dev_display (Regions)</l>
+<c>* All contour styles; thick outlines distinguish fill from stroke_and_fill.</c>
+<l>dev_set_color ('magenta')</l>
+<l>dev_set_line_width (4)</l>
+<l>Styles := ['stroke','fill','stroke_and_fill']</l>
+<l>for Index := 0 to 2 by 1</l>
+<l>    gen_contour_polygon_xld (Contour, [60,75,60], [5,15,25] + Index * 30)</l>
+<l>    dev_set_contour_style (Styles[Index])</l>
+<l>    dev_display (Contour)</l>
+<l>endfor</l>
+<c>* Multiple text positions, line breaks, transparent box, shadow and rotation.</c>
+<l>dev_disp_text (['First','Second\nline'], 'window', ['top','bottom'], ['left','right'], ['black','blue'], ['box_color','shadow','shadow_sigma','box_padding','border_width','border_color'], ['#ffeeccdd','true',2,4,1,'red'])</l>
+<l>dev_disp_text ('Rotated', 'image', 30, 45, 'black', ['box','rotate_phi'], ['false',30])</l>
+<c>* LUT set before opening the window; custom range applied to real pixels.</c>
+<l>dev_set_lut (['inverse',0,100])</l>
+<l>dev_open_window (0, 420, 100, 80, 'black', LutWindow)</l>
+<l>gen_image_const (RealImage, 'real', 100, 80)</l>
+<l>set_grayval (RealImage, [0,0,0], [0,1,2], [0,50,100])</l>
+<l>dev_display (RealImage)</l>
+<l>dev_set_lut ('default')</l>
+<l>dev_display (Image)</l>
+<c>* Known unsupported option must be visible as a warning.</c>
+<l>dev_disp_text ('No backdrop blur', 'window', 0, 0, 'white', ['box_color','backdrop_blur_sigma'], ['#00000080',2])</l>
+<l>TestPass := 1</l>
+</body>
+<docu id="options_preview">
+<abstract>Exercise color inheritance, region shapes, all contour styles, rich text and LUT normalization through native callbacks.</abstract>
+<short>Extended SVG options fixture.</short>
+<example>options_preview (TestPass)</example>
+<parameters><parameter id="TestPass"><description>1 after all display calls complete.</description></parameter></parameters>
+</docu>
+</procedure>
+</hdevelop>

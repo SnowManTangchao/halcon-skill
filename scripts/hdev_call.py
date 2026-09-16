@@ -10,6 +10,7 @@ import json
 import re
 import sys
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Any
 
 
@@ -215,12 +216,23 @@ def run_procedure(
     *,
     control_inputs: dict[str, Any] | None = None,
     image_inputs: dict[str, str] | None = None,
+    svg_dir: str | None = None,
 ) -> dict[str, Any]:
     control_inputs = control_inputs or {}
     image_inputs = image_inputs or {}
+    display = None
+    engine = None
 
     try:
         halcon = import_halcon()
+        if svg_dir is not None:
+            if __package__:
+                from .hdev_svg import SvgDisplay
+            else:
+                from hdev_svg import SvgDisplay
+            display = SvgDisplay()
+            engine = halcon.HDevEngine()
+            engine.set_hdev_operator_impl(display)
         program = _make_program(halcon, program_path)
         procedure = _load_local_procedure(halcon, program, procedure_name)
         call = halcon.HDevProcedureCall(procedure)
@@ -255,9 +267,28 @@ def run_procedure(
         }
         if test_pass is not None:
             result["test_pass"] = test_pass
-        return result
     except Exception as exc:
-        return _failure(exc, program=program_path, procedure=procedure_name)
+        result = _failure(exc, program=program_path, procedure=procedure_name)
+    finally:
+        if engine is not None:
+            try:
+                engine.unset_hdev_operator_impl()
+            except Exception as exc:
+                result["ok"] = False
+                result["visualization_cleanup_error"] = _error_dict(exc)
+
+    if display is not None:
+        try:
+            result["visualizations"] = display.export(svg_dir)
+        except Exception as exc:
+            result["ok"] = False
+            result["visualization_error"] = _error_dict(exc)
+        if display.warnings:
+            result["warnings"] = display.warnings
+        if display.errors:
+            result["ok"] = False
+            result["visualization_errors"] = display.errors
+    return result
 
 
 def run_matching_procedures(
@@ -266,6 +297,7 @@ def run_matching_procedures(
     *,
     control_inputs: dict[str, Any] | None = None,
     image_inputs: dict[str, str] | None = None,
+    svg_dir: str | None = None,
 ) -> dict[str, Any]:
     try:
         matcher = re.compile(pattern)
@@ -283,6 +315,7 @@ def run_matching_procedures(
             name,
             control_inputs=control_inputs,
             image_inputs=image_inputs,
+            svg_dir=str(Path(svg_dir) / name) if svg_dir is not None else None,
         )
         for name in matched
     ]
@@ -315,6 +348,7 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         help="List local procedure names",
     )
     action.add_argument("--match", help="Run local procedures whose names match REGEX")
+    parser.add_argument("--svg-dir", help="Export final dev_* window contents as SVG files.")
     parser.add_argument(
         "--input",
         dest="inputs",
@@ -364,6 +398,7 @@ def run_cli(argv: list[str] | None = None) -> CliResult:
             args.procedure,
             control_inputs=control_inputs,
             image_inputs=image_inputs,
+            svg_dir=args.svg_dir,
         )
     else:
         result = run_matching_procedures(
@@ -371,6 +406,7 @@ def run_cli(argv: list[str] | None = None) -> CliResult:
             args.match,
             control_inputs=control_inputs,
             image_inputs=image_inputs,
+            svg_dir=args.svg_dir,
         )
 
     if result.get("usage_error"):
