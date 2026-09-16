@@ -16,7 +16,7 @@ The HALCON operator calls, control flow, and data model are identical — only t
 | Comments | `* comment` (inside `<c>` tags in XML) | `* comment` or `// comment` |
 | Line comments | Only `*` at line start | `*` at line start **and** `//` anywhere |
 | Procedure definition | Embedded in XML `<procedure name="...">` with `<interface>` blocks | `proc name (params)` ... `endproc` |
-| Procedure visibility | N/A (all procedures are accessible) | `public proc` (exported) vs `proc` (file-local) |
+| Procedure visibility | Library helpers can use `access="local"` to hide them from external callers | `public proc` (exported) vs `proc` (file-local) |
 | Import mechanism | `import` keyword or HDevelop procedure search path | `from './path/to/file' import *` |
 | Interface declaration | XML tags: `<io>`, `<oo>`, `<ic>`, `<oc>` | Inline in proc signature: `object`, `out object`, `tuple`, `out tuple` |
 | Main entry point | `<procedure name="main">` | Top-level code (no `main` wrapper needed) |
@@ -30,6 +30,8 @@ The HALCON operator calls, control flow, and data model are identical — only t
 ```
 
 ## Procedure syntax
+
+The following are reduced syntax fragments, not complete production templates. Documentation is abbreviated. For externally called production procedures, also apply the `Image`/`JobPass` contract and full documentation requirements in [SKILL.md](../SKILL.md). Export visibility alone does not determine whether a procedure is a production API.
 
 ### HDevelop (`.hdvp` / `.hdev` XML)
 ```xml
@@ -46,7 +48,7 @@ The HALCON operator calls, control flow, and data model are identical — only t
 </oc>
 </interface>
 <body>
-<l>binary_threshold (Image, Dark, 'max_separability', 'dark', UsedThreshold)</l>
+<l>binary_threshold (Image, FinRegion, 'max_separability', 'dark', UsedThreshold)</l>
 <l>area_center (FinRegion, FinArea, Row, Column)</l>
 </body>
 </procedure>
@@ -59,7 +61,7 @@ The HALCON operator calls, control flow, and data model are identical — only t
 // FinArea: output control; type_list=integer; default_type=integer;
 //          mixed_type=false; multivalue=false; sem_type=integer; unit=pixels.
 public proc detect_fin(object Image, out object FinRegion, out tuple FinArea)
-  binary_threshold (Image, Dark, 'max_separability', 'dark', UsedThreshold)
+  binary_threshold (Image, FinRegion, 'max_separability', 'dark', UsedThreshold)
   area_center (FinRegion, FinArea, Row, Column)
 endproc
 ```
@@ -75,12 +77,16 @@ endproc
 
 Because HScript stores procedure documentation in comments rather than a `<docu>` block, document the equivalent metadata explicitly for every signature parameter:
 
+Document every procedure and the main program section with `//` comments above the signature or section. Include purpose and a realistic usage example. Follow the [documentation language policy](../SKILL.md#documentation-languages): English by default, the user's local language when different, and additional existing project languages. Use clearly labeled comment blocks for translations; do not require German in every project. Explain each parameter's purpose, range, units, and default where applicable, in addition to the metadata below.
+
 - Every input and output: direction, iconic/control class, `sem_type`, and `multivalue` (`false`, `true`, or `optional`).
 - Every control input and output: non-empty `type_list`, `default_type`, and `mixed_type`.
 - Every input control with a meaningful default: `default_value`; tunable and test parameters always need one.
 - Iconic parameters: image type or multichannel constraints only when meaningful; never invent control-only metadata.
 
 ### Procedure visibility
+
+Syntax-only illustration of export visibility; this arithmetic example is not a production image-inspection API.
 
 ```hscript
 * Exported — callable from other files that import this file
@@ -200,4 +206,4 @@ The affected operators are primarily IDE-update controls:
 - `dev_error_var` — no direct equivalent
 - `dev_open_dialog` — no direct equivalent (HDevelopEVO uses a different dialog system)
 
-For the `hscriptengine` CLI reference (help output, usage patterns, authoring guidelines, and comparison with `hrun`), see [`hscriptengine_reference.md`](hscriptengine_reference.md).
+For the `hscriptengine` CLI reference (help output, usage patterns, authoring guidelines, and comparison with `hrun`), see [`hscriptengine.md`](hscriptengine.md).

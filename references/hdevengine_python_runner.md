@@ -1,6 +1,8 @@
 # HDevEngine Python Runner
 
-Use `scripts/hdev_call.py` to call local HDevelop `.hdev` procedures directly through HALCON/Python HDevEngine. Prefer this runner for debugging and unit tests because it avoids `main()` dispatchers, global variables, and `hrun -D` parameter plumbing.
+Use `scripts/hdev_call.py` as the default for executing code in HDevelop `.hdev` files: call named local production procedures, helpers, or `test_*` directly through HALCON/Python HDevEngine. It avoids `main()` dispatchers, global variables, and `hrun -D` parameter plumbing. For intermediate-state inspection, use the [debugger](hdev_debug.md).
+
+This is currently a procedure runner, not a whole-program runner: an action such as `--procedure NAME` is required, and `--procedure main` is not supported. For an existing program whose `main()` must execute, use the [hrun fallback](hrun.md).
 
 ## Prerequisites
 
@@ -71,27 +73,43 @@ Name local `.hdev` unit tests with a `test_` prefix, for example:
 
 Do not require numbered names or group names. Use `--match` for ad hoc selections.
 
-Every `test_*` procedure should expose explicit inputs with sensible documented defaults:
+Keep `main()` for examples. Test individual procedures directly from `test_*`,
+including private helpers; no `main()` dispatcher or global overrides are needed.
+
+Expose only inputs the test actually needs, with sensible documented defaults.
+For file-based fixtures or optional debug artifacts, useful conventions are:
 
 - `FixtureRoot` default `./images`
 - `ResultDir` default `./result`
 - `DebugLevel` default `0`
 
-Pass these values explicitly when calling `hdev_call.py`. HDevelop's documented `<default_value>` metadata is for GUI/documentation support; do not assume HDevEngine applies it automatically at runtime.
+Do not add unused `FixtureRoot`, `ResultDir` or `DebugLevel` parameters to simple
+tests. Pass declared inputs explicitly when calling `hdev_call.py`. HDevelop's
+documented `<default_value>` metadata is for GUI/documentation support; do not
+assume HDevEngine applies it automatically at runtime. The batch examples above
+assume the selected tests declare those inputs; adapt arguments to their interfaces.
 
-Every `test_*` procedure should return these output control parameters:
+Every `test_*` procedure should return `TestPass` (`1` for pass, `0` for fail)
+based on assertions about the procedure under test. Add diagnostics only when useful:
 
-- `TestPass`: `1` for pass, `0` for fail.
 - `Message`: short human-readable assertion message.
 - `DiagnosticsJson`: JSON text with machine-readable debug values.
 
 Keep fixture loading and debug artifact writing in `test_*` procedures. Keep production image-processing logic in separate procedures that can also be called directly with `--procedure`.
 
+The public production API contract (`Image` containing an actual image and scalar
+boolean output `JobPass`) is defined in `SKILL.md`. It does not apply to private
+helpers, tests or `main()` examples. A test of expected rejection can pass even
+when the tested production procedure returns `JobPass = 0`; `TestPass` describes
+whether the observed behavior matches the expectation.
+
 ## When to Use `hrun`
 
-Use `hrun` only when a whole-program smoke run is enough, when HDevEngine/Python is not available, or when verifying runtime behavior that specifically depends on `main()`. Do not use `hrun -D` globals as the primary unit-test path for `.hdev` code.
+Use `hdev_call.py` by default. The exceptions and minimal invocation for `hrun` are in the [fallback note](hrun.md). Do not use `hrun -D` globals as the primary unit-test path for `.hdev` code.
 
 ## Optional SVG visualization
+
+For authoring, read [visualization](visualization.md): color palette, `dev_*` example, supported SVG options, retained drawing behavior, and limitations. This section covers setup, invocation, and output files.
 
 Install the Python dependency with `python -m pip install -r requirements.txt`.
 Install `mvtec-halcon` separately with the version matching your HALCON runtime;
@@ -118,13 +136,6 @@ the call, then unregisters it. No visible graphics windows are opened.
 Short-lived native buffer windows resolve HALCON colors and sample native LUTs;
 they are always closed after the query. Buffer-window support is required on
 the target platform (verified on Windows with HALCON 26.05).
-Each window is saved as a standalone SVG of its final retained drawing state,
-including windows closed by the procedure. Images are embedded as PNG; regions
-and XLD contours are SVG paths. Closed windows retain their last contents;
-cleared windows discard previous drawing elements. Style changes affect
-subsequent drawing operations. Color, shape, contour, draw, line-width and LUT
-settings also establish defaults for subsequently opened windows.
-
 JSON gains `visualizations: [{"window_id": 1, "path": ".../window_1.svg"}]`.
 Paths are absolute. Repeated runs use numeric filename suffixes instead of
 overwriting files. Batch mode exports into one subdirectory per procedure and
@@ -132,61 +143,11 @@ reports visualizations inside each entry in `results`. Graphics are also exporte
 after a procedure exception. Rendering/export failures set `ok: false` and exit
 code 1, with `visualization_errors` or `visualization_error` details.
 
-Supported callbacks:
-
-- Open/select/query/clear/close windows and change their dimensions.
-- `dev_set_part`: explicit inclusive image bounds; `(0,0,-1,-1)` fits the last
-  displayed image. Pixel centers map from HALCON row/column to SVG y/x.
-- `dev_set_color`, `dev_set_line_width`, `dev_set_draw` (fill/margin).
-- `dev_set_colored`: native 3-, 6- and 12-color palettes, cycling per object
-  within each display call; `dev_set_color` replaces the palette. Named colors
-  (including names with spaces) and alpha values are resolved by HALCON.
-- `dev_set_shape`: original, rectangle1, rectangle2, inner_circle, outer_circle,
-  ellipse and convex. HALCON's `shape_trans` produces the display regions;
-  rasterized region boundaries may differ slightly from native analytic shapes.
-- `dev_display`: PNG-compatible images, regions (including holes), XLD contours.
-- `dev_set_contour_style`: stroke, fill (without outline), stroke_and_fill.
-- `dev_set_lut`: native named LUTs (e.g. inverse, jet, batlow), LUT files and
-  native RGB tuples. Supports `[LUT, minimum, maximum]` (or 768 RGB entries
-  followed by minimum/maximum). The native table is sampled at 256 byte values,
-  then applied to single-channel images. Non-byte grayscale images are normalized
-  to their domain's minimum/maximum unless an explicit range is supplied;
-  constant images map to zero. RGB images bypass the grayscale LUT.
-  `default`/`linear` reset the table; omitting range arguments resets the range.
-- `dev_disp_text`: numeric image/window positions; window alignment via
-  top/center/bottom and left/center/right; multiple positions with scalar
-  broadcasting; multiline text and cycling colors. Text keeps a fixed 16px
-  monospace size even when its image-coordinate anchor is zoomed.
-  Supports box, box_color, box_padding, border_color, border_width, border_radius,
-  shadow, shadow_color, shadow_sigma, shadow_dx, shadow_dy and rotation via
-  rotate_phi/rotate_row/rotate_col. Box and shadow defaults follow HALCON.
-  Symbolic alignment uses a 12px window margin. Character widths and line spacing
-  are deterministic approximations; native font metrics are not reproduced.
-
 Exercise the extended options with:
 
 ```powershell
 python scripts/hdev_call.py tests/fixtures/svg.hdev --procedure options_preview --svg-dir result
 ```
-
-Limitations:
-
-- This is a display approximation, not a pixel-identical HDevelop renderer.
-  The final viewport transforms retained image-coordinate geometry; changing
-  window size or part does not emulate every native redraw behavior.
-- Shape `icon` (requires a custom icon), non-default paint modes, special part
-  modes and text backdrop blur are not implemented. These and unknown options
-  are reported in JSON `warnings`; unsupported style setters preserve the
-  previous setting. Invalid supported parameters, native palette/LUT failures
-  and callback errors produce `visualization_errors` with a failed result.
-- Only callbacks exposed by HDevEngine/Python can be intercepted. Other
-  `dev_*` operators retain HDevEngine behavior and cannot all be diagnosed.
-- Virtual handles are not native windows: direct graphics operators such as
-  `disp_obj`, `set_font` or helpers using ordinary window operators are not
-  supported with these handles. Use the supported `dev_*` operations.
-- Callback registration is process-global. SVG calls are intended for the
-  sequential CLI runner; do not combine them with another custom display
-  adapter or concurrent HDevEngine calls in the same process.
 
 Verify with `python -m unittest discover -s tests -v`; the SVG integration tests
 require drawsvg, compatible HALCON/Python/runtime versions, and a valid license.

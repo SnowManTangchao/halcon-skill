@@ -11,15 +11,27 @@ This skill follows the open [Agent Skills](https://agentskills.io) standard and 
 - **Generates complete, executable scripts** in both HDevelop XML (`.hdev`) and HDevelopEVO plain-text (`.hscript`) formats
 - **Selects appropriate HALCON operators** with valid parameter ranges and sensible defaults
 - **Builds structured vision pipelines** following a proven workflow: input → ROI → preprocessing → detection → decision
-- **Creates reusable procedures** with full multi-language documentation (English, German, + user locale)
-- **Runs and tests scripts headless** via `hrun` or `hscriptengine` for CI/testing workflows
-- **Leverages HALCON's documentation** — 2,600+ operator reference pages, solution guides, and 1,700+ example scripts
+- **Creates reusable procedures** documented in English by default, plus the user's language when different and additional existing project languages
+- **Runs individual procedures and tests** with explicit inputs, JSON results, and optional SVG visualization through the Python runner
+- **Debugs live HDevelop procedures without HDevelop** using persistent sessions, stepping, breakpoints, vector inspection, and iconic previews
+- **Runs complete programs headlessly** via `hrun` or `hscriptengine`
+- **Uses installed HALCON documentation** — operator references, solution guides, and examples
 
 ## Prerequisites
 
 - An AI coding agent that supports [Agent Skills](https://agentskills.io)
 - [HALCON](https://www.mvtec.com/products/halcon) (or compatible version) installed with `HALCONROOT` and `HALCONEXAMPLES` environment variables set
-- `hrun` and/or `hscriptengine` available on your PATH
+- A valid HALCON runtime license for execution
+- For the Python runner/debugger: Python and HALCON Python bindings matching the installed runtime, plus the dependencies below
+- For complete-program execution: the selected `hrun` or `hscriptengine` executable available on your PATH; neither is required merely to use the Python procedure runner
+
+Install the Python helper dependencies from the skill folder:
+
+```bash
+python -m pip install -r requirements.txt
+```
+
+This installs the SVG and debug-protocol dependencies, not the HALCON bindings or license. See the [Python setup reference](references/hdevengine_python_runner.md) for runtime configuration.
 
 ## Installation
 
@@ -45,7 +57,7 @@ npx skills update bertram-eu/halcon-skill
 
 ### Option B: Manual (git clone)
 
-Clone the repository and copy the skill into your agent's skills directory. The exact path depends on your agent:
+Clone the repository and copy the entire skill folder into your agent's skills directory, including `scripts/`, `references/`, and `requirements.txt`, not just `SKILL.md`. The exact path depends on your agent:
 
 ```bash
 git clone https://github.com/bertram-eu/halcon-skill.git
@@ -71,13 +83,29 @@ The skill defaults to `.hdev` (HDevelop XML) format. Mention "HDevelopEVO", "HSc
 
 ```
 halcon-skill/
-├── SKILL.md                             # Skill definition and authoring rules
-└── references/
-    ├── hdev_format_reference.md         # .hdev XML schema and documentation format
-    ├── hscript_format_reference.md      # .hscript plain-text syntax
-    ├── hrun_reference.md                # hrun CLI usage for headless .hdev execution
-    └── hscriptengine_reference.md       # hscriptengine CLI usage for headless .hscript execution
+├── SKILL.md          # Workflow selection and shared authoring rules
+├── references/       # Formats, runners, debugger, palette, installed resources
+├── scripts/          # Python procedure runner, SVG rendering, persistent debugger
+├── tests/            # Helper integration tests and HDevelop fixtures
+└── requirements.txt  # SVG and debug-protocol dependencies
 ```
+
+## Choosing an Execution Tool
+
+| Need | Tool | Details |
+|---|---|---|
+| Default for `.hdev`: call a named local procedure or `test_*`, get JSON or SVG | `scripts/hdev_call.py` | [Runner](references/hdevengine_python_runner.md) |
+| Inspect intermediate state without HDevelop | `scripts/hdev_debug.py` | [Debugger](references/hdev_debug.md) |
+| Fallback: execute an existing program's `main()` or run without Python bindings | `hrun` | [Fallback note](references/hrun.md) |
+| Run `.hscript` | `hscriptengine` | [HScript engine](references/hscriptengine.md) |
+
+For example, from the repository root:
+
+```bash
+python scripts/hdev_call.py tests/fixtures/debug.hdev --procedure debug_probe --input Value=21
+```
+
+Use `test_*` procedures for individual procedure tests and `main()` for examples. Public production procedures take a real `Image` and return boolean `JobPass`; private helpers and test/example entry points are exempt.
 
 ## Limitations
 
@@ -86,6 +114,7 @@ This is a proof of concept. Known limitations:
 - Requires a local HALCON installation and license for execution and documentation access
 - The skill relies on HALCON's HTML operator docs at `HALCONROOT/doc/html/` — if your installation is incomplete, operator lookups may fail
 - Generated scripts should always be reviewed and tested before production use
+- Remote debugging uses an unofficial native protocol. Read the [debugger limitations and session lifecycle](references/hdev_debug.md) before use; the password-free HALCON server belongs on a trusted host/network and must not be exposed remotely
 
 ## License
 

@@ -2,6 +2,14 @@
 
 HDevelop uses XML-based `.hdev` files. The HALCON operator calls, control flow, and data model are identical to HDevelopEVO's `.hscript` — only the file format differs.
 
+## Contents
+
+- [File types](#file-types) and [XML structure](#xml-schema-overview)
+- [Interfaces](#interface-element) and [code bodies](#body-element)
+- [Documentation languages](#multi-language-rule) and [parameter metadata](#required-parameter-metadata)
+- [Documentation fragment](#docu-fragment-for-a-non-main-procedure) and [main documentation](#docu-example-for-main)
+- [Multi-procedure files](#multi-procedure-files)
+
 ## File types
 
 | Extension | Purpose | Structure |
@@ -13,6 +21,8 @@ HDevelop uses XML-based `.hdev` files. The HALCON operator calls, control flow, 
 All three share the same XML schema, differing only in the presence of `<library/>` and the number of procedures.
 
 ## XML schema overview
+
+Structural fragment, not a complete runnable template; the helper body is omitted. The version below is an example, not a required HALCON version.
 
 ```xml
 <?xml version="1.0" encoding="UTF-8"?>
@@ -33,6 +43,8 @@ All three share the same XML schema, differing only in the presence of `<library
       <abstract lang="de_DE">Beschreibung, was das Skript tut.</abstract>
       <short lang="en_US">One-line summary.</short>
       <short lang="de_DE">Einzeilige Zusammenfassung.</short>
+      <example lang="en_US">Run main to read fabrik and threshold gray values from 128 to 255.</example>
+      <example lang="de_DE">main ausführen, um fabrik einzulesen und Grauwerte von 128 bis 255 zu segmentieren.</example>
       <parameters/>
     </docu>
   </procedure>
@@ -91,6 +103,8 @@ Contains up to four child groups, each holding `<par>` elements:
 
 ### Example: procedure with all four parameter groups
 
+Interface fragment only; body, documentation, and any application-specific production outputs are omitted.
+
 ```xml
 <procedure name="find_qr_codes">
 <interface>
@@ -121,7 +135,7 @@ Contains the executable code as a sequence of two element types:
 
 ### XML character escaping
 
-Standard XML escaping applies inside `<l>` and `<c>` elements:
+Standard XML escaping applies to all XML text, including `<l>`, `<c>`, and documentation elements such as `<example>`:
 
 | Character | XML escape | Example |
 |-----------|-----------|---------|
@@ -186,28 +200,25 @@ Documentation block attached to a procedure. **Required** for every procedure, i
 
 ### Multi-language rule
 
-The HDevelop GUI only displays text elements that match the GUI's active language. To ensure descriptions are visible regardless of language setting, provide **two** copies of every text element:
+Follow the [documentation language policy](../SKILL.md#documentation-languages): English by default, the user's local language if different, and any additional languages already used by the project.
 
-1. **`lang="en_US"`** — English copy
-2. **`lang="de_DE"`** — German copy
+Use `lang="en_US"` for English and the project's corresponding locale tags for translations (for example `de_DE` for German). Apply the selected languages consistently to descriptions, summaries, advisory text, examples, keywords, and chapters. Keep code identifiers unchanged in translated examples.
 
-If the user's locale is known and differs from `en_US`/`de_DE`, add a third copy (e.g., `lang="ja_JP"`).
-
-This pattern is how HALCON's own built-in procedures work (see `HALCONROOT/procedures/general/`). The `<keywords>` and `<chapters>` elements should also be provided in both `en_US` and `de_DE`.
+Any untagged fallback text must be English. Preserve an existing fallback convention; it does not count as an additional language or require a fixed third translation.
 
 ### Documentation child elements
 
-All children are optional, but `<abstract>`, `<short>`, `<parameters>`, and `<example>` should always be present.
+For this skill, every `<docu>` must contain `<abstract>`, `<short>`, `<parameters>`, and `<example>`. Document each interface parameter; use `<parameters/>` when there are none. Add advisory and related-operator metadata where applicable.
 
-#### Core description elements (provide in all three language variants)
+#### Core description elements (provide in the selected documentation languages)
 
 | Tag | Description |
 |-----|-------------|
 | `<abstract>` | Detailed description of what the procedure does. May contain operator refs (`&lt;op:operator_name&gt;`), procedure refs (`&lt;proc:procedure_name&gt;`), and topic refs (`&lt;toc:topic&gt;`) |
 | `<short>` | One-line summary |
-| `<example>` | Usage example showing how to call the procedure with realistic parameters. Plain text, not XML-escaped |
+| `<example>` | Usage example showing how to call the procedure with realistic parameters. Encode XML-special characters such as `<` and `&` as `&lt;` and `&amp;` |
 
-#### Advisory elements (provide in all three language variants where appropriate)
+#### Advisory elements (provide in the selected documentation languages where appropriate)
 
 | Tag | Description |
 |-----|-------------|
@@ -220,8 +231,8 @@ All children are optional, but `<abstract>`, `<short>`, `<parameters>`, and `<ex
 
 | Tag | Description |
 |-----|-------------|
-| `<chapters lang="...">` | Category tags — contains `<item>` elements (e.g., `"Develop"`, `"Inspection"`). Provide in both `en_US` and `de_DE` |
-| `<keywords lang="...">` | Search keywords — contains `<item>` elements. Provide in both `en_US` and `de_DE` |
+| `<chapters lang="...">` | Category tags — contains `<item>` elements (e.g., `"Develop"`, `"Inspection"`). Provide in the selected documentation languages |
+| `<keywords lang="...">` | Search keywords — contains `<item>` elements. Provide in the selected documentation languages |
 | `<see_also>` | Related procedures/operators — contains `<item>` elements |
 | `<alternatives>` | Alternative approaches — contains `<item>` elements |
 | `<predecessor>` | Procedures typically called before this one — contains `<item>` elements |
@@ -241,7 +252,7 @@ Documents one procedure parameter in the `<docu>` block.
 |-----------|-------------|----------------|
 | `<default_type>` | Default data type for a control parameter | `"integer"`, `"real"`, `"string"`, `"none"` |
 | `<default_value>` | Suggested value for an input control parameter; callers must still pass it explicitly | `"0"`, `"-1"`, `"'true'"` |
-| `<description>` | Human-readable description. Provide in **three** variants: no `lang` (fallback), `lang="en_US"`, `lang="de_DE"` | |
+| `<description>` | Human-readable description in the selected documentation languages; any untagged fallback is English | |
 | `<mixed_type>` | Whether a control tuple may mix the types listed in `<type_list>` | `"true"`, `"false"` |
 | `<multivalue>` | Required cardinality: one value, tuple, or either | `"false"`, `"true"`, `"optional"` |
 | `<multichannel>` | Multi-channel support? | `"optional"` |
@@ -262,9 +273,13 @@ Set the following fields for every procedure parameter; do not leave the corresp
 
 Use `<multivalue>false</multivalue>` when exactly one value is accepted, `true` when a tuple is required, and `optional` only when both forms are supported. Use `<mixed_type>true</mixed_type>` only when one tuple may contain different types from `<type_list>`; otherwise set it to `false` explicitly. `<default_value>` is documentation, not an automatically supplied runtime argument.
 
-### Full `<docu>` example for a non-main procedure
+Add `<values>`, `<value_min>`, and `<value_max>` when they describe real choices or enforced numeric limits. Parameter descriptions must explain purpose, ranges, and units where applicable. Do not add control-only `<default_type>`, `<default_value>`, or `<mixed_type>` to iconic parameters.
 
-Note the three-language pattern: a language-independent copy (no `lang`) as fallback, plus `lang="en_US"` and `lang="de_DE"` copies. This matches how HALCON's own built-in procedures are documented.
+### `<docu>` fragment for a non-main procedure
+
+This example uses English and German for a German-speaking user or an English/German project. Adapt the translations to the language policy rather than requiring German in every project.
+
+This fragment illustrates selected metadata, not a complete interface description. Only four of the nine call parameters are shown. A complete procedure must additionally document `DefectRegions`, `ThresholdMax`, `MaxDefectArea`, `DefectCount`, and `DefectAreas`, with metadata matching its actual interface.
 
 ```xml
 <docu id="inspect_threshold_defects">
@@ -370,10 +385,12 @@ The `main` procedure should also be documented. Since `main` has no interface pa
 
 ```xml
 <docu id="main">
-  <abstract lang="en_US">Unit test for threshold-based defect inspection. Reads a test image, runs the inspection procedure, and displays the result. All parameters are global variables that can be overridden via hrun -D.</abstract>
-  <abstract lang="de_DE">Unit-Test für schwellwertbasierte Defektinspektion. Liest ein Testbild, führt die Inspektionsprozedur aus und zeigt das Ergebnis an. Alle Parameter sind globale Variablen, die über hrun -D überschrieben werden können.</abstract>
-  <short lang="en_US">Test script for threshold defect inspection.</short>
-  <short lang="de_DE">Testskript für Schwellwert-Defektinspektion.</short>
+  <abstract lang="en_US">Example of threshold-based defect inspection. Reads an example image, calls the production procedure with explicit parameters, and displays the result. Individual procedure tests belong in separate test_* procedures.</abstract>
+  <abstract lang="de_DE">Beispiel für schwellwertbasierte Defektinspektion. Liest ein Beispielbild, ruft die Produktionsprozedur mit expliziten Parametern auf und zeigt das Ergebnis an. Tests einzelner Prozeduren stehen in separaten test_*-Prozeduren.</abstract>
+  <short lang="en_US">Example script for threshold defect inspection.</short>
+  <short lang="de_DE">Beispielskript für Schwellwert-Defektinspektion.</short>
+  <example lang="en_US">Run main with the supplied example image to inspect and display defects.</example>
+  <example lang="de_DE">main mit dem mitgelieferten Beispielbild ausführen, um Defekte zu prüfen und anzuzeigen.</example>
   <parameters/>
 </docu>
 ```
@@ -382,7 +399,7 @@ The `main` procedure should also be documented. Since `main` has no interface pa
 
 ### `.hdev` scripts with local procedures
 
-A `.hdev` script can contain `main` plus helper procedures. All procedures share the same `<hdevelop>` root. **Both `main` and helper procedures must have `<docu>` blocks** with all three language variants:
+A `.hdev` script can contain `main` plus helper procedures. All procedures share the same `<hdevelop>` root. **Both `main` and helper procedures must have `<docu>` blocks** with the selected documentation languages:
 
 ```xml
 <hdevelop file_version="1.2" halcon_version="25.11.0.0">
@@ -399,6 +416,8 @@ A `.hdev` script can contain `main` plus helper procedures. All procedures share
       <short>Demo for helper_proc.</short>
       <short lang="en_US">Demo for helper_proc.</short>
       <short lang="de_DE">Demo für helper_proc.</short>
+      <example lang="en_US">Run main to load fabrik and compute its image-domain area.</example>
+      <example lang="de_DE">main ausführen, um fabrik zu laden und die Fläche seines Bildbereichs zu berechnen.</example>
       <parameters/>
     </docu>
   </procedure>
@@ -448,6 +467,8 @@ A `.hdev` script can contain `main` plus helper procedures. All procedures share
 
 Libraries are marked with `<library/>` and can use `access="local"` to hide internal helpers:
 
+The following is a reduced visibility example, not a production template: documentation is omitted and the exported arithmetic procedure only demonstrates access. Actual external production APIs must include a real `Image` input, boolean `JobPass` output, and full procedure/parameter documentation as required by [SKILL.md](../SKILL.md).
+
 ```xml
 <hdevelop file_version="1.2" halcon_version="25.11.0.0">
 <library/>
@@ -479,4 +500,4 @@ Libraries are marked with `<library/>` and can use `access="local"` to hide inte
 </hdevelop>
 ```
 
-For the `hrun` CLI reference (help output, usage patterns, authoring guidelines), see [`hrun_reference.md`](hrun_reference.md).
+Use [`hdev_call.py`](hdevengine_python_runner.md) by default to execute named procedures in `.hdev` files. For execution of an existing program's `main()`, see the short [hrun fallback note](hrun.md).
