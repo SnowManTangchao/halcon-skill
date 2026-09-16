@@ -1,0 +1,115 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<hdevelop file_version="1.2" halcon_version="26.05.0.0">
+<procedure name="main">
+<interface/>
+<body/>
+<docu id="main">
+<abstract>Local procedures for the debugger integration tests.</abstract>
+<abstract lang="en_US">Local procedures for the debugger integration tests.</abstract>
+<abstract lang="de_DE">Lokale Prozeduren fuer Debugger-Integrationstests.</abstract>
+<short>Debugger fixture.</short><short lang="en_US">Debugger fixture.</short><short lang="de_DE">Debugger-Testdatei.</short>
+<example>Call debug_probe with Value=21.</example><example lang="en_US">Call debug_probe with Value=21.</example><example lang="de_DE">debug_probe mit Value=21 aufrufen.</example>
+<parameters/>
+</docu>
+</procedure>
+<procedure name="debug_probe">
+<interface>
+<ic><par name="Value" base_type="ctrl" dimension="0"/></ic>
+<oc><par name="Result" base_type="ctrl" dimension="0"/></oc>
+</interface>
+<body>
+<c>* Local variables, including iconic values, are intentionally not outputs.</c>
+<l>Intermediate := Value * 2</l>
+<l>Mixed := [1,2.5,'hello']</l>
+<l>gen_image_const (Image, 'byte', 64, 48)</l>
+<l>gen_rectangle1 (Region, 10, 12, 30, 40)</l>
+<l>gen_contour_region_xld (Region, Contour, 'border')</l>
+<l>gen_empty_obj (Empty)</l>
+<l>Long := [0:199]</l>
+<l>Result := Intermediate + 1</l>
+<l>return ()</l>
+</body>
+<docu id="debug_probe">
+<abstract>Creates deterministic local tuples, an image, a region and an XLD contour. Returns twice Value plus one. No external input/output or interactive operators.</abstract>
+<abstract lang="en_US">Creates deterministic local tuples, an image, a region and an XLD contour. Returns twice Value plus one. No external input/output or interactive operators.</abstract>
+<abstract lang="de_DE">Erzeugt lokale Tupel, ein Bild, eine Region und eine XLD-Kontur. Liefert zweimal Value plus eins. Keine externe Kommunikation oder interaktiven Operatoren.</abstract>
+<short>Exercise local variable inspection and breakpoints.</short><short lang="en_US">Exercise local variable inspection and breakpoints.</short><short lang="de_DE">Lokale Variablen und Breakpoints pruefen.</short>
+<example>debug_probe (21, Result)</example><example lang="en_US">debug_probe (21, Result)</example><example lang="de_DE">debug_probe (21, Result)</example>
+<chapters lang="en_US"><item>Develop</item></chapters><chapters lang="de_DE"><item>Develop</item></chapters>
+<keywords lang="en_US"><item>debugging</item></keywords><keywords lang="de_DE"><item>Debugging</item></keywords>
+<see_also/><alternatives/><predecessor/><successor/>
+<parameters>
+<parameter id="Value"><description>Numeric test input.</description><description lang="en_US">Numeric test input.</description><description lang="de_DE">Numerischer Testwert.</description><default_type>integer</default_type><default_value>21</default_value><sem_type>number</sem_type><mixed_type>false</mixed_type><multivalue>false</multivalue><type_list><item>integer</item><item>real</item></type_list><values><item>21</item><item>7</item></values></parameter>
+<parameter id="Result"><description>Twice Value plus one.</description><description lang="en_US">Twice Value plus one.</description><description lang="de_DE">Zweimal Value plus eins.</description><default_type>integer</default_type><sem_type>number</sem_type><mixed_type>false</mixed_type><multivalue>false</multivalue><type_list><item>integer</item><item>real</item></type_list></parameter>
+</parameters>
+</docu>
+</procedure>
+<procedure name="debug_loop">
+<interface><oc><par name="Result" base_type="ctrl" dimension="0"/></oc></interface>
+<body>
+<l>Result := 0</l>
+<l>for Index := 0 to 2 by 1</l>
+<l>    Result := Result + 1</l>
+<l>endfor</l>
+<l>return ()</l>
+</body>
+<docu id="debug_loop">
+<abstract>Visits the same source line three times to test breakpoint notifications and removal.</abstract><abstract lang="en_US">Visits the same source line three times to test breakpoint notifications and removal.</abstract><abstract lang="de_DE">Besucht dieselbe Zeile dreimal zum Testen von Breakpoints und deren Entfernung.</abstract>
+<short>Repeated breakpoint fixture.</short><short lang="en_US">Repeated breakpoint fixture.</short><short lang="de_DE">Wiederholte Breakpoints.</short>
+<example>debug_loop (Result)</example><example lang="en_US">debug_loop (Result)</example><example lang="de_DE">debug_loop (Result)</example>
+<parameters><parameter id="Result"><description>Number of iterations, three at completion.</description><description lang="en_US">Number of iterations, three at completion.</description><description lang="de_DE">Anzahl der Iterationen, am Ende drei.</description><default_type>integer</default_type><sem_type>integer</sem_type><mixed_type>false</mixed_type><multivalue>false</multivalue><type_list><item>integer</item></type_list></parameter></parameters>
+</docu>
+</procedure>
+<procedure name="debug_wait">
+<interface><ic><par name="Delay" base_type="ctrl" dimension="0"/></ic><oc><par name="Result" base_type="ctrl" dimension="0"/></oc></interface>
+<body>
+<l>wait_seconds (Delay)</l>
+<l>Result := 1</l>
+</body>
+<docu id="debug_wait">
+<abstract>Waits for the supplied seconds to test running-state responses and process cleanup.</abstract><abstract lang="en_US">Waits for the supplied seconds to test running-state responses and process cleanup.</abstract><abstract lang="de_DE">Wartet die angegebenen Sekunden zum Testen laufender Sitzungen und deren Beendigung.</abstract>
+<short>Bounded execution delay fixture.</short><short lang="en_US">Bounded execution delay fixture.</short><short lang="de_DE">Test mit Ausfuehrungsverzoegerung.</short>
+<example>debug_wait (1, Result)</example><example lang="en_US">debug_wait (1, Result)</example><example lang="de_DE">debug_wait (1, Result)</example>
+<parameters>
+<parameter id="Delay"><description>Nonnegative wait time in seconds.</description><description lang="en_US">Nonnegative wait time in seconds.</description><description lang="de_DE">Nichtnegative Wartezeit in Sekunden.</description><default_type>real</default_type><default_value>1</default_value><sem_type>number</sem_type><mixed_type>false</mixed_type><multivalue>false</multivalue><type_list><item>integer</item><item>real</item></type_list><values><item>1</item><item>5</item></values></parameter>
+<parameter id="Result"><description>One when finished.</description><description lang="en_US">One when finished.</description><description lang="de_DE">Eins nach Abschluss.</description><default_type>integer</default_type><sem_type>integer</sem_type><mixed_type>false</mixed_type><multivalue>false</multivalue><type_list><item>integer</item></type_list></parameter>
+</parameters>
+</docu>
+</procedure>
+<procedure name="debug_nested">
+<interface><ic><par name="Value" base_type="ctrl" dimension="0"/></ic><oc><par name="Result" base_type="ctrl" dimension="0"/></oc></interface>
+<body>
+<l>OuterLocal := Value + 100</l>
+<l>debug_probe (Value, Result)</l>
+<l>Result := Result + OuterLocal</l>
+</body>
+<docu id="debug_nested">
+<abstract>Calls debug_probe to exercise nested stacks and caller-frame inspection.</abstract><abstract lang="en_US">Calls debug_probe to exercise nested stacks and caller-frame inspection.</abstract><abstract lang="de_DE">Ruft debug_probe zum Testen verschachtelter Aufrufstapel auf.</abstract>
+<short>Nested call fixture.</short><short lang="en_US">Nested call fixture.</short><short lang="de_DE">Verschachtelter Testaufruf.</short>
+<example>debug_nested (21, Result)</example><example lang="en_US">debug_nested (21, Result)</example><example lang="de_DE">debug_nested (21, Result)</example>
+<parameters>
+<parameter id="Value"><description>Numeric input.</description><description lang="en_US">Numeric input.</description><description lang="de_DE">Numerischer Eingang.</description><default_type>integer</default_type><default_value>21</default_value><sem_type>number</sem_type><mixed_type>false</mixed_type><multivalue>false</multivalue><type_list><item>integer</item><item>real</item></type_list></parameter>
+<parameter id="Result"><description>Nested result plus caller local.</description><description lang="en_US">Nested result plus caller local.</description><description lang="de_DE">Ergebnis des Unteraufrufs plus lokaler Wert.</description><default_type>integer</default_type><sem_type>number</sem_type><mixed_type>false</mixed_type><multivalue>false</multivalue><type_list><item>integer</item><item>real</item></type_list></parameter>
+</parameters>
+</docu>
+</procedure>
+<procedure name="debug_vectors">
+<interface/>
+<body>
+<l>Values := {[1,2],[],[3.5,'hello']}</l>
+<l>Nested := {Values,{[9]}}</l>
+<l>EmptyVector := Values</l>
+<l>gen_image_const (Image, 'byte', 16, 12)</l>
+<l>Images := {Image,Image}</l>
+<l>EmptyVector.clear()</l>
+<l>Sparse.at(2) := [7]</l>
+<l>return ()</l>
+</body>
+<docu id="debug_vectors">
+<abstract>Creates nested control vectors and an iconic vector for debugger inspection.</abstract><abstract lang="en_US">Creates nested control vectors and an iconic vector for debugger inspection.</abstract><abstract lang="de_DE">Erzeugt verschachtelte Kontrollvektoren und einen ikonischen Vektor fuer die Debugger-Inspektion.</abstract>
+<short>Vector inspection fixture.</short><short lang="en_US">Vector inspection fixture.</short><short lang="de_DE">Test fuer Vektorinspektion.</short>
+<example>debug_vectors ()</example><example lang="en_US">debug_vectors ()</example><example lang="de_DE">debug_vectors ()</example>
+<parameters/>
+</docu>
+</procedure>
+</hdevelop>

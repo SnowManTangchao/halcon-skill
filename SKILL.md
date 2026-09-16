@@ -11,6 +11,10 @@ Use this skill to produce production-grade HALCON vision scripts in either forma
 
 Both share the same HALCON operators, data model, and control flow. The differences are in file format, procedure syntax, and import mechanism.
 
+For local `.hdev` procedures, `scripts/hdev_call.py` provides JSON results and
+optional SVG output. For interactive diagnosis without HDevelop, use the
+persistent `scripts/hdev_debug.py` CLI.
+
 ## Target format
 Ask the user which format they need if unclear. Default to `.hdev` unless the user mentions HDevelopEVO, HScript, `.hscript`, or `hscriptengine`.
 
@@ -31,10 +35,37 @@ Local references in `references/`:
 3. [`references/hrun_reference.md`](references/hrun_reference.md) — `hrun` CLI help, usage patterns, and authoring guidelines for headless `.hdev` execution.
 4. [`references/hscriptengine_reference.md`](references/hscriptengine_reference.md) — `hscriptengine` CLI help, usage patterns, authoring guidelines, and comparison with `hrun`.
 
+5. [`references/hdevengine_python_runner.md`](references/hdevengine_python_runner.md) — Python runner inputs, JSON results, tests and SVG output.
+6. [`references/hdev_debug_reference.md`](references/hdev_debug_reference.md) — read when debugging live procedure state: sessions, stepping, breakpoints, variable inspection and image/region/XLD previews.
+
 HALCONROOT documentation (available at `HALCONROOT/doc/`):
 - **Operator reference:** `doc/html/reference/operators/` — 2,637 HTML pages with full operator signatures, parameter descriptions, and examples. Use for operator-level details when the local references are insufficient.
 - **PDF manuals:** `doc/pdf/manuals/` — `hdevelop_users_guide.pdf`, `programmers_guide.pdf`, `quick_guide.pdf`, `parallel_programming.pdf`, etc.
 - **Solution guides:** `doc/pdf/solution_guide/` — application-focused guides for matching, measuring, 3D vision, classification, data codes, and image acquisition.
+
+## Interactive debugging
+
+Use the normal runner for reproducible execution and regression tests. When a
+failure or unexpected result needs intermediate-state inspection, use the debug
+CLI with the same explicit inputs. Form a concrete hypothesis, use `source` and
+breakpoints to reach the relevant code, inspect selected variables, and request
+iconic previews only when useful. `step` is for focused investigation, not walking
+through an entire program line by line.
+
+Use native `breakpoint --variable` for writes and `inspect --vector-path` to
+drill into nested control/iconic vectors; see the debugger reference for syntax.
+Variable breakpoints stop after the write; `next` is null because the native
+source position can be stale. Conditional breakpoints are not emulated.
+
+Keep the returned session ID across commands. `procedure_line` is 1-based within
+the procedure body (comments count), **not** the XML file line; `next` has not run
+yet. A `running` response means the same session is still executing: poll `status`,
+do not start another run. Close the session when finished. Closing terminates its
+isolated process without running the remaining statements. After changing code,
+start a new session and re-run ordinary tests; a paused session retains the loaded
+source. Do not automatically replay code with camera, file, network or equipment
+side effects. The local HALCON server has no password; use a trusted host/network
+and do not expose it remotely.
 
 ## Authoring workflow
 1. Convert user requirements into a pipeline with explicit phases:
